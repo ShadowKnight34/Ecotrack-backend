@@ -56,7 +56,6 @@ app.use('/api/schools', schoolRoutes);
 
 // ── Start server ─────────────────────────────
 // This tells the engine to use Render's port first, or default to 3000 locally
-const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
