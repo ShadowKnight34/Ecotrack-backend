@@ -16,10 +16,12 @@ function calculateXP(score) {
 
 /**
  * Calculate level from total XP.
- * Level up every 200 XP (Level 1 starts at 0 XP).
+ * Thresholds: Level 2 >= 100 XP, Level 3 >= 300 XP
  */
 function calculateLevel(totalXP) {
-    return Math.floor(totalXP / 200) + 1;
+    if (totalXP >= 300) return 3;
+    if (totalXP >= 100) return 2;
+    return 1;
 }
 
 /**
@@ -72,9 +74,11 @@ async function processGamification(userID, score) {
         // ── 5. Badge unlock checks ───────────────
         await checkAndAwardBadges(userID, newLevel, score);
 
+        return { leveledUp, newLevel, xpEarned, newXP };
     } catch (error) {
         // Gamification errors should NOT break the quiz response
         console.error('Gamification error:', error.message);
+        return { leveledUp: false, newLevel: 1, xpEarned: 0, newXP: 0 };
     }
 }
 

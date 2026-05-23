@@ -9,7 +9,7 @@ const pool = require('../config/db');
 exports.getLeaderboard = async (req, res) => {
     try {
         const [rows] = await pool.query(
-            'SELECT username, level, xp FROM User ORDER BY xp DESC LIMIT 50'
+            'SELECT userID, username, level, xp, className FROM User ORDER BY xp DESC LIMIT 50'
         );
 
         return res.status(200).json(rows);

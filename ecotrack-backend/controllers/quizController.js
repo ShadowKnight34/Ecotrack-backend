@@ -41,26 +41,56 @@ exports.submitQuiz = async (req, res) => {
         });
 
         // 4 ── Grade the submission
-        const totalQuestions = correctRows.length;
+        const totalQuestions = answers.length;
         let correctCount = 0;
 
         answers.forEach((answer) => {
             const correct = answerKey[answer.questionID];
-            if (correct && answer.selectedOption.toUpperCase() === correct.toUpperCase()) {
+            if (correct && answer.selectedOption.trim().toLowerCase() === correct.trim().toLowerCase()) {
                 correctCount++;
             }
         });
 
         const score = Math.round((correctCount / totalQuestions) * 100);
 
-        // 5 ── Save the attempt in QuizResult
-        await pool.query(
-            'INSERT INTO QuizResult (userID, moduleID, score) VALUES (?, ?, ?)',
-            [userID, moduleID, score]
-        );
+        // 5 ── Save the attempt in QuizResult and QuizAnswer (Atomic Transaction)
+        const connection = await pool.getConnection();
+        try {
+            await connection.beginTransaction();
 
-        // 6 ── Trigger gamification processing
-        await processGamification(userID, score);
+            const [result] = await connection.query(
+                'INSERT INTO QuizResult (userID, moduleID, score) VALUES (?, ?, ?)',
+                [userID, moduleID, score]
+            );
+            const resultID = result.insertId;
+
+            // Prepare bulk insert for QuizAnswer
+            const answerValues = answers.map(answer => {
+                const correct = answerKey[answer.questionID];
+                const isCorrect = correct && answer.selectedOption.trim().toLowerCase() === correct.trim().toLowerCase();
+                return [resultID, answer.questionID, answer.selectedOption, isCorrect];
+            });
+
+            if (answerValues.length > 0) {
+                await connection.query(
+                    'INSERT INTO QuizAnswer (resultID, questionID, selectedOption, isCorrect) VALUES ?',
+                    [answerValues]
+                );
+            }
+
+            await connection.commit();
+        } catch (dbError) {
+            await connection.rollback();
+            throw dbError; // Rethrow to be caught by the outer catch block
+        } finally {
+            connection.release();
+        }
+
+        // 6 ── Trigger gamification processing (Students only)
+        let gamificationResult = {};
+        if (req.user.role === 'student') {
+            gamificationResult = await processGamification(userID, score) || {};
+        }
 
         // 7 ── Return the result (never expose the answer key)
         return res.status(200).json({
@@ -69,6 +99,7 @@ exports.submitQuiz = async (req, res) => {
             totalQuestions,
             correctCount,
             score,
+            ...gamificationResult
         });
     } catch (error) {
         console.error('submitQuiz error:', error.message);
@@ -78,3 +109,22 @@ exports.submitQuiz = async (req, res) => {
         });
     }
 };
+
+// ── GET /api/quizzes/user-results ─────────────
+exports.getUserResults = async (req, res) => {
+    try {
+        const userID = req.user.userID;
+        const [results] = await pool.query(
+            'SELECT resultID, userID, moduleID, score, dateTaken FROM QuizResult WHERE userID = ?',
+            [userID]
+        );
+        return res.status(200).json(results);
+    } catch (error) {
+        console.error('getUserResults error:', error.message);
+        return res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Failed to retrieve user quiz results.',
+        });
+    }
+};
+

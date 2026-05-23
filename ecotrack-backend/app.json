@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "82387207-7d0f-477c-920b-271cb8cf94da"
+      }
+    },
+    "android": {
+      "package": "com.nik_amir.ecotrackbackend"
+    }
+  }
+}

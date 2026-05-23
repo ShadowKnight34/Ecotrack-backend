@@ -1,25 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-    StyleSheet, Text, View, FlatList, Dimensions,
+    StyleSheet, Text, View, FlatList, Dimensions, ActivityIndicator
 } from 'react-native';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import api from '../services/api';
 
 const { width } = Dimensions.get('window');
-
-// ── Dummy leaderboard data ──
-const LEADERBOARD = [
-    { rank: 1, username: 'EcoWarrior', level: 8, xp: 1580 },
-    { rank: 2, username: 'GreenHero', level: 7, xp: 1350 },
-    { rank: 3, username: 'PlanetSaver', level: 6, xp: 1120 },
-    { rank: 4, username: 'TreeHugger99', level: 5, xp: 980 },
-    { rank: 5, username: 'EcoStudent', level: 5, xp: 920 },
-    { rank: 6, username: 'NatureNinja', level: 4, xp: 780 },
-    { rank: 7, username: 'GreenThumb', level: 4, xp: 710 },
-    { rank: 8, username: 'EarthGuard', level: 3, xp: 550 },
-    { rank: 9, username: 'BioChamp', level: 3, xp: 490 },
-    { rank: 10, username: 'LeafLearner', level: 2, xp: 310 },
-];
 
 // ── Medal colors for top 3 ──
 const MEDAL = {
@@ -28,31 +15,39 @@ const MEDAL = {
     3: { bg: '#D97706', text: '#451A03', emoji: '🥉', ring: '#B45309' },
 };
 
-function TopThreePodium() {
-    const top3 = LEADERBOARD.slice(0, 3);
-    // Display order: 2nd, 1st, 3rd
-    const ordered = [top3[1], top3[0], top3[2]];
-    const heights = [100, 140, 80];
+function TopThreePodium({ data }) {
+    if (!data || data.length === 0) return null;
+    const top3 = data.slice(0, 3);
+    
+    const ordered = [];
+    if (top3.length > 1) ordered.push({ user: top3[1], height: 100 });
+    if (top3.length > 0) ordered.push({ user: top3[0], height: 140 });
+    if (top3.length > 2) ordered.push({ user: top3[2], height: 80 });
 
     return (
         <View style={styles.podiumContainer}>
-            {ordered.map((user, i) => {
-                const medal = MEDAL[user.rank];
+            {ordered.map(({ user, height }) => {
+                const medal = MEDAL[user.rank] || MEDAL[3];
                 return (
                     <View key={user.rank} style={styles.podiumSlot}>
                         {/* Avatar */}
                         <View style={[styles.podiumAvatar, { borderColor: medal.ring, backgroundColor: medal.ring + '40' }]}>
                             <Text style={styles.podiumEmoji}>{medal.emoji}</Text>
                         </View>
-                        <Text style={styles.podiumUsername} numberOfLines={1}>
-                            {user.username}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                            <Text style={styles.podiumUsername} numberOfLines={1}>
+                                {user.username}
+                            </Text>
+                            {user.className && (
+                                <Text style={styles.podiumClass}> ({user.className})</Text>
+                            )}
+                        </View>
                         <Text style={styles.podiumXP}>{user.xp} XP</Text>
                         {/* Podium bar */}
                         <View
                             style={[
                                 styles.podiumBar,
-                                { height: heights[i], backgroundColor: medal.bg },
+                                { height: height, backgroundColor: medal.bg },
                             ]}
                         >
                             <Text style={[styles.podiumRank, { color: medal.text }]}>
@@ -71,7 +66,14 @@ function LeaderRow({ item }) {
     const medal = MEDAL[item.rank];
 
     return (
-        <Card style={[styles.row, isTopThree && { borderColor: medal.ring, borderBottomColor: medal.ring, backgroundColor: medal.bg + '10' }]}>
+        <Card style={[
+            styles.row, 
+            { 
+                borderLeftWidth: 5, 
+                borderLeftColor: isTopThree ? medal.bg : 'transparent',
+                backgroundColor: '#FFFFFF'
+            }
+        ]}>
             {/* Rank */}
             <View
                 style={[
@@ -91,7 +93,12 @@ function LeaderRow({ item }) {
 
             {/* User info */}
             <View style={styles.userInfo}>
-                <Text style={styles.rowUsername}>{item.username}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={styles.rowUsername}>{item.username}</Text>
+                    {item.className && (
+                        <Text style={styles.rowClass}> • {item.className}</Text>
+                    )}
+                </View>
                 <Text style={styles.rowLevel}>Level {item.level}</Text>
             </View>
 
@@ -104,18 +111,48 @@ function LeaderRow({ item }) {
 }
 
 export default function LeaderboardScreen() {
+    const [leaderboardData, setLeaderboardData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const response = await api.get('/leaderboard');
+                const rankedData = response.data.map((user, index) => ({
+                    ...user,
+                    rank: index + 1
+                }));
+                setLeaderboardData(rankedData);
+            } catch (error) {
+                console.error('Error fetching leaderboard:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLeaderboard();
+    }, []);
+
+    if (loading) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#10B981" />
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <FlatList
-                data={LEADERBOARD}
-                keyExtractor={(item) => item.rank.toString()}
+                data={leaderboardData.slice(3)}
+                keyExtractor={(item) => item.userID ? item.userID.toString() : item.username}
                 ListHeaderComponent={
                     <View>
                         <View style={styles.header}>
                             <Text style={styles.heading}>Leaderboard</Text>
                             <Text style={styles.subtitle}>Top learners this season</Text>
                         </View>
-                        <TopThreePodium />
+                        <TopThreePodium data={leaderboardData} />
                         <Text style={styles.allRanksTitle}>All Rankings</Text>
                     </View>
                 }
@@ -180,7 +217,11 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '800',
         color: '#111827',
-        marginBottom: 4,
+    },
+    podiumClass: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#27AE60',
     },
     podiumXP: {
         fontSize: 12,
@@ -213,7 +254,8 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
+        marginVertical: 8,
+        backgroundColor: '#fff',
         padding: 16,
     },
     rankBadge: {
@@ -239,6 +281,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '800',
         color: '#111827',
+    },
+    rowClass: {
+        fontSize: 13,
+        fontWeight: 'bold',
+        color: '#27AE60',
     },
     rowLevel: {
         fontSize: 13,

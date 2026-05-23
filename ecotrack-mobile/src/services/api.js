@@ -1,11 +1,12 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // -------------------------------------------------------
 // Axios instance pre-configured for the EcoTrack backend.
 // Update BASE_URL once the backend API is deployed.
 // -------------------------------------------------------
 
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const api = axios.create({
     baseURL: BASE_URL,
@@ -17,15 +18,22 @@ const api = axios.create({
 
 // --- Request interceptor (e.g. attach auth token) ---
 api.interceptors.request.use(
-    (config) => {
-        // TODO: Retrieve token from secure storage and attach it
-        // const token = await SecureStore.getItemAsync('authToken');
-        // if (token) config.headers.Authorization = `Bearer ${token}`;
+    async (config) => {
+        try {
+            // 1. Retrieve the token saved during Login
+            const token = await AsyncStorage.getItem('userToken');
+
+            // 2. If it exists, attach it to the headers
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+        } catch (error) {
+            console.error('Error fetching token from storage', error);
+        }
         return config;
     },
     (error) => Promise.reject(error),
 );
-
 // --- Response interceptor (e.g. global error handling) ---
 api.interceptors.response.use(
     (response) => response,

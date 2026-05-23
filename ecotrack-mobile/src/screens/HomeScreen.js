@@ -1,64 +1,138 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import React, { useState, useCallback, useContext } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Flame, Star } from 'lucide-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '../context/AuthContext';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import ProgressBar from '../components/ui/ProgressBar';
+import api from '../services/api';
 
 export default function HomeScreen({ navigation }) {
+  const { user, setUser, setIsAuthenticated } = useContext(AuthContext);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserData = async () => {
+        try {
+          const response = await api.get('/auth/me');
+          setUser(response.data);
+        } catch (error) {
+          console.error('Error fetching user stats:', error);
+        }
+      };
+
+      fetchUserData();
+    }, [setUser])
+  );
+
+  if (!user) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#10B981" />
+      </View>
+    );
+  }
+
+  const currentLevel = user.level || 1;
+  const currentXP = user.xp || 0;
+
+  // Example formula for XP required to reach next level
+  const nextLevelXP = currentLevel * 200; 
+  const progress = currentXP / nextLevelXP;
+
+  const badgesCount = user.earnedBadges ? user.earnedBadges.length : 0;
+  // TODO: Implement backend streak tracking logic
+  const streakCount = user.streak || 0;
+
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken');
+    setIsAuthenticated(false);
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* ── Welcome Header ── */}
-      <View style={styles.header}>
-        <Text style={styles.welcomeText}>Welcome back,</Text>
-        <Text style={styles.username}>EcoWarrior! 🌱</Text>
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTextContainer}>
+          {/* Dynamic greeting logic for user onboarding */}
+          <Text style={styles.welcomeText}>
+            {currentXP === 0 ? 'Welcome to EcoTrack,' : 'Welcome back,'}
+          </Text>
+          <Text style={styles.username}>{user.username}! 🌱</Text>
+          {user.className ? (
+              <Text style={styles.classLabel}>Class: {user.className}</Text>
+          ) : (
+              <Text style={styles.classLabelWarning}>Class: Not Assigned</Text>
+          )}
+        </View>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <MaterialCommunityIcons name="logout" size={28} color="#EF4444" />
+        </TouchableOpacity>
       </View>
 
-      {/* ── Level & Progress Card ── */}
-      <Card style={styles.levelCard}>
-        <View style={styles.levelHeader}>
-          <View>
-            <Text style={styles.levelTitle}>Current Level</Text>
-            <Text style={styles.levelNumber}>Level 5</Text>
-          </View>
-          <Badge variant="secondary" style={styles.streakBadge}>
-            <Flame size={16} color="#78350F" style={{ marginRight: 4 }} />
-            <Text style={{ color: '#78350F', fontWeight: 'bold' }}>3 Day Streak</Text>
-          </Badge>
+      {/* Dynamic onboarding banner for new users */}
+      {currentXP === 0 && (
+        <View style={styles.welcomeBanner}>
+          <Text style={styles.welcomeBannerText}>
+            Complete your first module to start your journey!
+          </Text>
         </View>
+      )}
 
-        <View style={styles.progressContainer}>
-          <View style={styles.progressTextRow}>
-            <Text style={styles.xpText}>450 XP</Text>
-            <Text style={styles.xpTarget}>500 XP to Level 6</Text>
+      {user?.role === 'student' && (
+        <>
+          {/* ── Level & Progress Card ── */}
+          <Card style={styles.levelCard}>
+            <View style={styles.levelHeader}>
+              <View>
+                <Text style={styles.levelTitle}>Current Level</Text>
+                <Text style={styles.levelNumber}>Level {currentLevel}</Text>
+              </View>
+              {streakCount > 0 && (
+                <Badge variant="secondary" style={styles.streakBadge}>
+                  <Flame size={16} color="#78350F" style={{ marginRight: 4 }} />
+                  <Text style={{ color: '#78350F', fontWeight: 'bold' }}>{streakCount} Day Streak</Text>
+                </Badge>
+              )}
+            </View>
+
+            <View style={styles.progressContainer}>
+              <View style={styles.progressTextRow}>
+                <Text style={styles.xpText}>{currentXP} XP</Text>
+                <Text style={styles.xpTarget}>{nextLevelXP} XP to Level {currentLevel + 1}</Text>
+              </View>
+              <ProgressBar progress={progress} color="#FBBF24" height={16} />
+            </View>
+          </Card>
+
+          {/* ── Quick Stats Grid ── */}
+          <View style={styles.statsGrid}>
+            <Card style={styles.statSquareCard}>
+              <Star color="#FBBF24" size={32} fill="#FBBF24" style={styles.statIcon} />
+              <Text style={styles.statSquareValue}>{currentXP}</Text>
+              <Text style={styles.statSquareLabel}>Total XP</Text>
+            </Card>
+            <Card style={styles.statSquareCard}>
+              <Text style={{ fontSize: 32 }}>🎖️</Text>
+              <Text style={styles.statSquareValue}>{badgesCount}</Text>
+              <Text style={styles.statSquareLabel}>Badges</Text>
+            </Card>
           </View>
-          <ProgressBar progress={450 / 500} color="#FBBF24" height={16} />
-        </View>
-      </Card>
-
-      {/* ── Quick Stats Grid ── */}
-      <View style={styles.statsGrid}>
-        <Card style={styles.statSquareCard}>
-          <Star color="#FBBF24" size={32} fill="#FBBF24" style={styles.statIcon} />
-          <Text style={styles.statSquareValue}>450</Text>
-          <Text style={styles.statSquareLabel}>Total XP</Text>
-        </Card>
-        <Card style={styles.statSquareCard}>
-          <Text style={{ fontSize: 32 }}>🎖️</Text>
-          <Text style={styles.statSquareValue}>3</Text>
-          <Text style={styles.statSquareLabel}>Badges</Text>
-        </Card>
-      </View>
-
+        </>
+      )}
       {/* ── Daily Goal / CTA ── */}
       <Card style={styles.ctaCard}>
         <Text style={styles.ctaTitle}>Ready for your next lesson?</Text>
         <Text style={styles.ctaSubtitle}>
-          You are 50 XP away from reaching Level 6. Complete a module today to level up!
+          You are {nextLevelXP - currentXP} XP away from reaching Level {currentLevel + 1}. Complete a module today to level up!
         </Text>
         <Button
           variant="default"
+          // Try adding .jumpTo if navigate fails, or keep it as Modules
           onPress={() => navigation.navigate('Modules')}
           style={{ width: '100%' }}
         >
@@ -78,8 +152,17 @@ const styles = StyleSheet.create({
     padding: 24,
     paddingTop: 32,
   },
-  header: {
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 24,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  logoutButton: {
+    padding: 8,
   },
   welcomeText: {
     fontSize: 16,
@@ -93,6 +176,37 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#111827',
     marginTop: 4,
+  },
+  classLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#27AE60',
+    marginTop: 4,
+  },
+  classLabelWarning: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#E74C3C',
+    marginTop: 4,
+  },
+
+  // ── Welcome Banner ──
+  welcomeBanner: {
+    backgroundColor: '#E0F2F1',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  welcomeBannerText: {
+    color: '#00796B',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   // ── Level Card ──

@@ -17,19 +17,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         borderRadius: 24,
         padding: 20,
-        borderWidth: 2,
-        borderColor: '#E5E7EB',
-        // Neobrutalist / gamified shadow
-        borderBottomWidth: 6,
-        borderBottomColor: '#D1D5DB',
-        // Shadow for iOS/Android
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+        elevation: 4,
+        overflow: 'hidden',
+        // iOS shadow equivalent
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.05,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
         shadowRadius: 4,
-        elevation: 2,
     },
 });

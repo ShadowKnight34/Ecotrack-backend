@@ -20,10 +20,19 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.anonymous.ecotrackmobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sharing"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "22237dfb-f233-46fd-8219-ee230d8cc464"
+      }
     }
   }
 }

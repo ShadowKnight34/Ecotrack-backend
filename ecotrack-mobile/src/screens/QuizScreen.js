@@ -1,62 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     StyleSheet, Text, View, TouchableOpacity,
-    SafeAreaView, Alert,
+    Alert, ActivityIndicator, ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
 import ProgressBar from '../components/ui/ProgressBar';
-
-// ── Dummy quiz data (will be replaced by API call) ──
-const QUIZ_DATA = [
-    {
-        questionID: 1,
-        questionText: 'What does SDG 4 primarily focus on?',
-        optionA: 'Clean Water',
-        optionB: 'Quality Education',
-        optionC: 'No Poverty',
-        optionD: 'Good Health',
-    },
-    {
-        questionID: 2,
-        questionText: 'Which year is the SDG target deadline?',
-        optionA: '2025',
-        optionB: '2030',
-        optionC: '2035',
-        optionD: '2040',
-    },
-    {
-        questionID: 3,
-        questionText: 'How many Sustainable Development Goals are there?',
-        optionA: '12',
-        optionB: '15',
-        optionC: '17',
-        optionD: '20',
-    },
-    {
-        questionID: 4,
-        questionText: 'Which organization adopted the SDGs?',
-        optionA: 'WHO',
-        optionB: 'UNICEF',
-        optionC: 'United Nations',
-        optionD: 'World Bank',
-    },
-];
+import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 
 const OPTIONS = ['A', 'B', 'C', 'D'];
 
 export default function QuizScreen({ route, navigation }) {
+    const { user, setUser } = useContext(AuthContext);
     const { moduleID, title } = route?.params || { moduleID: 1, title: 'Quiz' };
 
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [questions, setQuestions] = useState([]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState([]);       // { questionID, selectedOption }
     const [selectedOption, setSelectedOption] = useState(null);
 
-    const question = QUIZ_DATA[currentIndex];
-    const totalQuestions = QUIZ_DATA.length;
-    const isLastQuestion = currentIndex === totalQuestions - 1;
-    const progress = (currentIndex + 1) / totalQuestions;
+    useEffect(() => {
+        const fetchQuestions = async () => {
+            try {
+                const response = await api.get(`/modules/${moduleID}/quiz?form=${user?.formLevel || 1}`);
+                setQuestions(response.data);
+            } catch (error) {
+                console.error('Error fetching questions:', error);
+                Alert.alert('Error', 'Could not load questions. Please try again later.');
+            }
+        };
+
+        if (moduleID) {
+            fetchQuestions();
+        }
+    }, [moduleID]);
+
+    if (questions.length === 0) {
+        return (
+            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#10B981" />
+                <Text style={{ marginTop: 16, color: '#6B7280', fontWeight: '600' }}>Loading questions...</Text>
+            </SafeAreaView>
+        );
+    }
+
+    const question = questions[currentQuestionIndex];
+    const totalQuestions = questions.length;
+    const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+    const progress = (currentQuestionIndex + 1) / totalQuestions;
 
     // ── Select an option ──
     const handleSelect = (option) => {
@@ -64,27 +58,62 @@ export default function QuizScreen({ route, navigation }) {
     };
 
     // ── Go to next question or submit ──
-    const handleNext = () => {
+    // ── Go to next question or submit ──
+    const handleNext = async () => {
         if (!selectedOption) {
             Alert.alert('Select an answer', 'Please choose an option before continuing.');
             return;
         }
 
+        // 1. Capture current answer
+        const currentAnswerText = getOptionText(selectedOption);
         const updatedAnswers = [
             ...answers,
-            { questionID: question.questionID, selectedOption },
+            { questionID: question.questionID, selectedOption: currentAnswerText },
         ];
         setAnswers(updatedAnswers);
 
         if (isLastQuestion) {
-            // Submit quiz
-            Alert.alert(
-                '🎉 Quiz Complete!',
-                `You answered ${totalQuestions} questions.\nYour submission has been recorded.`,
-                [{ text: 'Back to Modules', onPress: () => navigation.goBack() }]
-            );
+            try {
+                // 2. Submit to the Backend Engine
+                // Matches your Controller: const { moduleID, answers } = req.body;
+                const response = await api.post('/quizzes/submit', {
+                    moduleID: moduleID,
+                    answers: updatedAnswers
+                });
+
+                if (response.data.leveledUp) {
+                    Alert.alert(
+                        '🎉 Level Up!',
+                        `Congratulations! You've reached Level ${response.data.newLevel}!`
+                    );
+                }
+
+                // 3. Re-fetch user profile data so progress and XP update seamlessly
+                try {
+                    const profileRes = await api.get('/auth/me');
+                    if (setUser) {
+                        setUser(profileRes.data);
+                    }
+                } catch (profileError) {
+                    console.error('Failed to re-fetch user profile after quiz submission:', profileError);
+                }
+
+                // 4. Navigate to Results using SERVER-SIDE grading
+                navigation.navigate('Results', {
+                    score: response.data.correctCount,
+                    total: response.data.totalQuestions
+                });
+
+            } catch (error) {
+                console.error('Quiz submission error:', error);
+                Alert.alert(
+                    'Submission Failed',
+                    'We couldn\'t save your score. Please check your connection.'
+                );
+            }
         } else {
-            setCurrentIndex(currentIndex + 1);
+            setCurrentQuestionIndex(currentQuestionIndex + 1);
             setSelectedOption(null);
         }
     };
@@ -101,58 +130,60 @@ export default function QuizScreen({ route, navigation }) {
             <View style={styles.header}>
                 <Text style={styles.moduleTitle}>{title}</Text>
                 <Text style={styles.questionCount}>
-                    Question {currentIndex + 1} of {totalQuestions}
+                    Question {currentQuestionIndex + 1} of {totalQuestions}
                 </Text>
             </View>
 
             {/* Progress bar */}
             <ProgressBar progress={progress} color="#10B981" height={10} style={{ marginBottom: 28 }} />
 
-            {/* Question card */}
-            <Card style={styles.questionCard}>
-                <Badge variant="outline" style={{ marginBottom: 12 }}>
-                    Q{currentIndex + 1}
-                </Badge>
-                <Text style={styles.questionText}>{question.questionText}</Text>
-            </Card>
+            <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+                {/* Question card */}
+                <Card style={styles.questionCard}>
+                    <Badge variant="outline" style={{ marginBottom: 12 }}>
+                        Q{currentQuestionIndex + 1}
+                    </Badge>
+                    <Text style={styles.questionText}>{question.questionText}</Text>
+                </Card>
 
-            {/* Options */}
-            <View style={styles.optionsContainer}>
-                {OPTIONS.map((opt) => {
-                    const isSelected = selectedOption === opt;
-                    return (
-                        <TouchableOpacity
-                            key={opt}
-                            style={[
-                                styles.optionButton,
-                                isSelected && styles.optionSelected,
-                            ]}
-                            activeOpacity={0.8}
-                            onPress={() => handleSelect(opt)}
-                        >
-                            <View style={[styles.optionBadge, isSelected && styles.optionBadgeSelected]}>
-                                <Text style={[styles.optionLetter, isSelected && styles.optionLetterSelected]}>
-                                    {opt}
+                {/* Options */}
+                <View style={styles.optionsContainer}>
+                    {OPTIONS.map((opt) => {
+                        const isSelected = selectedOption === opt;
+                        return (
+                            <TouchableOpacity
+                                key={opt}
+                                style={[
+                                    styles.optionButton,
+                                    isSelected && styles.optionSelected,
+                                ]}
+                                activeOpacity={0.8}
+                                onPress={() => handleSelect(opt)}
+                            >
+                                <View style={[styles.optionBadge, isSelected && styles.optionBadgeSelected]}>
+                                    <Text style={[styles.optionLetter, isSelected && styles.optionLetterSelected]}>
+                                        {opt}
+                                    </Text>
+                                </View>
+                                <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                                    {getOptionText(opt)}
                                 </Text>
-                            </View>
-                            <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                                {getOptionText(opt)}
-                            </Text>
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
 
-            {/* Action button */}
-            <View style={{ marginBottom: 20 }}>
-                <Button
-                    variant={selectedOption ? 'default' : 'outline'}
-                    onPress={handleNext}
-                    disabled={!selectedOption}
-                >
-                    {isLastQuestion ? '🚀 Submit Quiz' : 'Next Question →'}
-                </Button>
-            </View>
+                {/* Action button */}
+                <View style={{ marginBottom: 20 }}>
+                    <Button
+                        variant={selectedOption ? 'default' : 'outline'}
+                        onPress={handleNext}
+                        disabled={!selectedOption}
+                    >
+                        {isLastQuestion ? '🚀 Submit Quiz' : 'Next Question →'}
+                    </Button>
+                </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }
