@@ -168,7 +168,7 @@ exports.getStudentsList = async (req, res) => {
                 qr.dateTaken AS dateTaken,
                 u.level AS level,
                 u.xp AS xp
-             FROM User u
+             FROM user u
              LEFT JOIN School s ON u.schoolID = s.schoolID
              LEFT JOIN QuizResult qr ON u.userID = qr.userID
              WHERE u.role = 'student' 

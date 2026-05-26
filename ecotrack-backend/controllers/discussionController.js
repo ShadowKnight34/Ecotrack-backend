@@ -13,7 +13,7 @@ exports.getAllDiscussions = async (req, res) => {
         let query = `
             SELECT d.*, u.username, u.formLevel, u.role
             FROM Discussion d 
-            JOIN User u ON d.userID = u.userID
+            JOIN user u ON d.userID = u.userID
         `;
         const params = [];
 

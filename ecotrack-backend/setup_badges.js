@@ -16,7 +16,7 @@ const pool = require('./config/db');
     console.log('Badges seeded');
 
     // Reset test user
-    await pool.query('UPDATE User SET xp = 0, level = 1 WHERE userID = 1');
+    await pool.query('UPDATE user SET xp = 0, level = 1 WHERE userID = 1');
     await pool.query('DELETE FROM UserBadge WHERE userID = 1');
     console.log('Test user reset');
 
@@ -24,7 +24,7 @@ const pool = require('./config/db');
     const [badges] = await pool.query('SELECT * FROM Badge');
     badges.forEach(b => console.log(`  ${b.badgeID}: ${b.badgeName} [${b.requirement}]`));
 
-    const [user] = await pool.query('SELECT userID, username, xp, level FROM User WHERE userID = 1');
+    const [user] = await pool.query('SELECT userID, username, xp, level FROM user WHERE userID = 1');
     console.log('User:', JSON.stringify(user[0]));
 
     process.exit(0);

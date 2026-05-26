@@ -36,11 +36,11 @@ function assert(name, condition, detail = '') {
 // ── Test Suites ──────────────────────────────
 async function resetTestData() {
     console.log('\n🔧 Resetting test data...');
-    await pool.query("DELETE FROM UserBadge WHERE userID IN (SELECT userID FROM User WHERE email = 'integtest@ecotrack.com')");
-    await pool.query("DELETE FROM QuizAnswer WHERE resultID IN (SELECT resultID FROM QuizResult WHERE userID IN (SELECT userID FROM User WHERE email = 'integtest@ecotrack.com'))");
-    await pool.query("DELETE FROM QuizResult WHERE userID IN (SELECT userID FROM User WHERE email = 'integtest@ecotrack.com')");
-    await pool.query("DELETE FROM Discussion WHERE userID IN (SELECT userID FROM User WHERE email = 'integtest@ecotrack.com')");
-    await pool.query("DELETE FROM User WHERE email = 'integtest@ecotrack.com'");
+    await pool.query("DELETE FROM UserBadge WHERE userID IN (SELECT userID FROM user WHERE email = 'integtest@ecotrack.com')");
+    await pool.query("DELETE FROM QuizAnswer WHERE resultID IN (SELECT resultID FROM QuizResult WHERE userID IN (SELECT userID FROM user WHERE email = 'integtest@ecotrack.com'))");
+    await pool.query("DELETE FROM QuizResult WHERE userID IN (SELECT userID FROM user WHERE email = 'integtest@ecotrack.com')");
+    await pool.query("DELETE FROM Discussion WHERE userID IN (SELECT userID FROM user WHERE email = 'integtest@ecotrack.com')");
+    await pool.query("DELETE FROM user WHERE email = 'integtest@ecotrack.com'");
     console.log('   Done.\n');
 }
 
@@ -207,7 +207,7 @@ async function testGamification() {
 
     // After the two quizzes above: 50% → +50 XP, 100% → +100 XP = 150 XP total
     const [userRows] = await pool.query(
-        "SELECT xp, level FROM User WHERE email = 'integtest@ecotrack.com'"
+        "SELECT xp, level FROM user WHERE email = 'integtest@ecotrack.com'"
     );
     const user = userRows[0];
     assert('XP = 150 (50 + 100)', user.xp === 150);
@@ -217,7 +217,7 @@ async function testGamification() {
     const [badges] = await pool.query(
         `SELECT b.badgeName FROM UserBadge ub
      JOIN Badge b ON ub.badgeID = b.badgeID
-     WHERE ub.userID = (SELECT userID FROM User WHERE email = 'integtest@ecotrack.com')`
+     WHERE ub.userID = (SELECT userID FROM user WHERE email = 'integtest@ecotrack.com')`
     );
     const badgeNames = badges.map((b) => b.badgeName);
     assert('Badge: "Passing Grade" earned (score ≥ 50)', badgeNames.includes('Passing Grade'));
@@ -234,7 +234,7 @@ async function testGamification() {
     }, TOKEN);
 
     const [updatedRows] = await pool.query(
-        "SELECT xp, level FROM User WHERE email = 'integtest@ecotrack.com'"
+        "SELECT xp, level FROM user WHERE email = 'integtest@ecotrack.com'"
     );
     const updated = updatedRows[0];
     assert('XP = 250 after 3rd quiz (+100)', updated.xp === 250);
@@ -244,7 +244,7 @@ async function testGamification() {
     const [newBadges] = await pool.query(
         `SELECT b.badgeName FROM UserBadge ub
      JOIN Badge b ON ub.badgeID = b.badgeID
-     WHERE ub.userID = (SELECT userID FROM User WHERE email = 'integtest@ecotrack.com')`
+     WHERE ub.userID = (SELECT userID FROM user WHERE email = 'integtest@ecotrack.com')`
     );
     const newBadgeNames = newBadges.map((b) => b.badgeName);
     assert('Badge: "First Steps" earned (level ≥ 2)', newBadgeNames.includes('First Steps'));

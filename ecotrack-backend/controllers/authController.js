@@ -46,7 +46,7 @@ exports.register = async (req, res) => {
 
         // 2 ── Check if email already exists
         const [existing] = await pool.query(
-            'SELECT userID FROM User WHERE email = ?',
+            'SELECT userID FROM user WHERE email = ?',
             [email]
         );
 
@@ -77,7 +77,7 @@ exports.register = async (req, res) => {
         const finalClassName = className || null;
 
         const [result] = await pool.query(
-            'INSERT INTO User (username, email, password, level, xp, className, role, schoolID, formLevel) VALUES (?, ?, ?, 1, 0, ?, ?, ?, ?)',
+            'INSERT INTO user (username, email, password, level, xp, className, role, schoolID, formLevel) VALUES (?, ?, ?, 1, 0, ?, ?, ?, ?)',
             [username, email, hashedPassword, finalClassName, userRole, finalSchoolID, formLevel || null]
         );
 
@@ -109,7 +109,7 @@ exports.login = async (req, res) => {
 
         // 2 ── Find user by email
         const [rows] = await pool.query(
-            'SELECT * FROM User WHERE email = ?',
+            'SELECT * FROM user WHERE email = ?',
             [email]
         );
 
@@ -162,7 +162,7 @@ exports.getMe = async (req, res) => {
         const userID = req.user.userID;
         const [userRows] = await pool.query(
             `SELECT u.userID, u.username, u.email, u.level, u.xp, u.role, u.className, u.formLevel, u.schoolID, s.schoolName 
-             FROM User u 
+             FROM user u 
              LEFT JOIN School s ON u.schoolID = s.schoolID 
              WHERE u.userID = ?`,
             [userID]
@@ -222,7 +222,7 @@ exports.updateProfile = async (req, res) => {
         const userID = req.user.userID;
 
         // Fetch current user details from DB to know role and schoolID
-        const [userRows] = await connection.query('SELECT role, schoolID FROM User WHERE userID = ?', [userID]);
+        const [userRows] = await connection.query('SELECT role, schoolID FROM user WHERE userID = ?', [userID]);
         if (userRows.length === 0) {
             connection.release();
             return res.status(404).json({ message: 'User not found.' });
@@ -260,7 +260,7 @@ exports.updateProfile = async (req, res) => {
 
             // Update teacher's schoolID in User table
             await connection.query(
-                'UPDATE User SET schoolID = ? WHERE userID = ?',
+                'UPDATE user SET schoolID = ? WHERE userID = ?',
                 [resolvedSchoolID, userID]
             );
 
@@ -318,7 +318,7 @@ exports.updateProfile = async (req, res) => {
             }
 
             await connection.query(
-                'UPDATE User SET className = ?, formLevel = ?, schoolID = ? WHERE userID = ?',
+                'UPDATE user SET className = ?, formLevel = ?, schoolID = ? WHERE userID = ?',
                 [className, formLevel || null, resolvedSchoolID, userID]
             );
 

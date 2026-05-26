@@ -5,7 +5,7 @@ const SALT_ROUNDS = 10;
 // ── GET /api/admin/dashboard-stats ─────────────
 exports.getDashboardStats = async (req, res) => {
     try {
-        const [[{ totalUsers }]] = await pool.query('SELECT COUNT(*) AS totalUsers FROM User');
+        const [[{ totalUsers }]] = await pool.query('SELECT COUNT(*) AS totalUsers FROM user');
         const [[{ totalModules }]] = await pool.query('SELECT COUNT(*) AS totalModules FROM module');
         const [[{ activeQuizzes }]] = await pool.query('SELECT COUNT(DISTINCT moduleID) AS activeQuizzes FROM QuizQuestion');
 
@@ -24,7 +24,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
     try {
         const [users] = await pool.query(
-            'SELECT userID, username, email, level, xp, role, className FROM User ORDER BY userID DESC'
+            'SELECT userID, username, email, level, xp, role, className FROM user ORDER BY userID DESC'
         );
         return res.status(200).json(users);
     } catch (error) {
@@ -43,7 +43,7 @@ exports.updateUserRole = async (req, res) => {
             return res.status(400).json({ message: 'Invalid role' });
         }
 
-        await pool.query('UPDATE User SET role = ? WHERE userID = ?', [role, id]);
+        await pool.query('UPDATE user SET role = ? WHERE userID = ?', [role, id]);
         return res.status(200).json({ message: 'User role updated successfully' });
     } catch (error) {
         console.error('updateUserRole error:', error.message);
@@ -60,7 +60,7 @@ exports.deleteUser = async (req, res) => {
             return res.status(400).json({ message: 'You cannot delete your own account' });
         }
 
-        await pool.query('DELETE FROM User WHERE userID = ?', [id]);
+        await pool.query('DELETE FROM user WHERE userID = ?', [id]);
         return res.status(200).json({ message: 'User deleted successfully' });
     } catch (error) {
         console.error('deleteUser error:', error.message);

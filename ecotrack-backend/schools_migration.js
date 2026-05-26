@@ -9,11 +9,11 @@ CREATE TABLE IF NOT EXISTS School (
 `;
 
 const alterUserTableAddColumn = `
-ALTER TABLE User ADD COLUMN schoolID INT;
+ALTER TABLE user ADD COLUMN schoolID INT;
 `;
 
 const alterUserTableAddFK = `
-ALTER TABLE User ADD FOREIGN KEY (schoolID) REFERENCES School(schoolID) ON DELETE SET NULL;
+ALTER TABLE user ADD FOREIGN KEY (schoolID) REFERENCES School(schoolID) ON DELETE SET NULL;
 `;
 
 const insertDummySchools = `

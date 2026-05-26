@@ -39,7 +39,7 @@ async function processGamification(userID, score) {
 
         // ── 2. Get user's current stats ──────────
         const [userRows] = await pool.query(
-            'SELECT xp, level FROM User WHERE userID = ?',
+            'SELECT xp, level FROM user WHERE userID = ?',
             [userID]
         );
 
@@ -57,7 +57,7 @@ async function processGamification(userID, score) {
 
         // ── 4. Persist updated stats ─────────────
         await pool.query(
-            'UPDATE User SET xp = ?, level = ? WHERE userID = ?',
+            'UPDATE user SET xp = ?, level = ? WHERE userID = ?',
             [newXP, newLevel, userID]
         );
 

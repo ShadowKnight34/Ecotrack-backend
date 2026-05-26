@@ -16,7 +16,7 @@ const migrate = async () => {
 
         // Add formLevel to User
         try {
-            await pool.query('ALTER TABLE User ADD COLUMN formLevel INT DEFAULT NULL;');
+            await pool.query('ALTER TABLE user ADD COLUMN formLevel INT DEFAULT NULL;');
             console.log('Added formLevel to User');
         } catch (err) {
             if (err.code === 'ER_DUP_FIELDNAME') {

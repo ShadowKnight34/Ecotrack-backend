@@ -6,7 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Update BASE_URL once the backend API is deployed.
 // -------------------------------------------------------
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+// Change this line: const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+// To this hardcoded live URL:
+const BASE_URL = 'https://ecotrack-e0pv.onrender.com/api';
 
 const api = axios.create({
     baseURL: BASE_URL,
