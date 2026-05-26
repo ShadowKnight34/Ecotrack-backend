@@ -334,3 +334,50 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
+// ── POST /api/auth/reset-password ─────────────────────
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+
+        if (!email || !newPassword) {
+            return res.status(400).json({
+                error: 'Bad Request',
+                message: 'email and newPassword are required.',
+            });
+        }
+
+        // 1 ── Check if email exists
+        const [rows] = await pool.query(
+            'SELECT userID FROM user WHERE email = ?',
+            [email]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                error: 'Not Found',
+                message: 'No account with this email address was found.',
+            });
+        }
+
+        // 2 ── Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+        // 3 ── Update password in database
+        await pool.query(
+            'UPDATE user SET password = ? WHERE email = ?',
+            [hashedPassword, email]
+        );
+
+        return res.status(200).json({
+            message: 'Password reset successfully.',
+        });
+    } catch (error) {
+        console.error('Reset password error:', error.message);
+        return res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Something went wrong while resetting the password.',
+        });
+    }
+};
+
+
