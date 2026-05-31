@@ -30,6 +30,66 @@ app.get('/', (req, res) => {
     });
 });
 
+// ── Temporary Remote Migration Route ─────────
+const pool = require('./config/db');
+app.get('/api/migrate', async (req, res) => {
+    try {
+        console.log('Running migrations on remote TiDB Cloud database...');
+        
+        // 1. Create School Table
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS School (
+                schoolID INT AUTO_INCREMENT PRIMARY KEY,
+                schoolName VARCHAR(255) NOT NULL,
+                schoolCode VARCHAR(50) UNIQUE NOT NULL
+            );
+        `);
+
+        // 2. Add schoolID to User
+        try {
+            await pool.query('ALTER TABLE user ADD COLUMN schoolID INT;');
+            console.log('Added schoolID column to User table.');
+        } catch (colErr) {
+            console.log('schoolID column might already exist, skipping.');
+        }
+
+        // 3. Add Foreign Key
+        try {
+            await pool.query('ALTER TABLE user ADD FOREIGN KEY (schoolID) REFERENCES School(schoolID) ON DELETE SET NULL;');
+            console.log('Added Foreign Key to User table.');
+        } catch (fkErr) {
+            console.log('Foreign key constraint might already exist, skipping.');
+        }
+
+        // 4. Add formLevel to User
+        try {
+            await pool.query('ALTER TABLE user ADD COLUMN formLevel INT DEFAULT NULL;');
+            console.log('Added formLevel column to User table.');
+        } catch (flErr) {
+            console.log('formLevel might already exist, skipping.');
+        }
+
+        // 5. Insert dummy schools
+        await pool.query(`
+            INSERT IGNORE INTO School (schoolName, schoolCode) VALUES 
+            ('SMK Damansara Utama', 'SMKDU-01'),
+            ('SK Bangsar', 'SKB-02'),
+            ('SMK Bukit Bintang', 'SMKBB-03');
+        `);
+
+        return res.status(200).json({
+            status: 'success',
+            message: 'Database migrated successfully on TiDB Cloud!',
+        });
+    } catch (error) {
+        console.error('Migration route error:', error.message);
+        return res.status(500).json({
+            status: 'error',
+            message: error.message,
+        });
+    }
+});
+
 // ── Route mounting ───────────────────────────
 const authRoutes = require('./routes/authRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
