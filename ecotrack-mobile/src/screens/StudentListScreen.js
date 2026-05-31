@@ -35,6 +35,13 @@ export default function StudentListScreen({ navigation }) {
     const [activeTooltip, setActiveTooltip] = useState(null);
     const [chartInteractionMsg, setChartInteractionMsg] = useState(null);
 
+    // School credentials dynamic states
+    const [selectedSchool, setSelectedSchool] = useState('All Schools');
+    const [studentsData, setStudentsData] = useState([]);
+
+    // Dynamic unique schools calculation
+    const uniqueSchools = ['All Schools', ...new Set(studentsData.map(s => s.schoolName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
     useEffect(() => {
         fetchInitialData();
     }, []);
@@ -45,6 +52,36 @@ export default function StudentListScreen({ navigation }) {
         }
     }, [selectedClass, selectedStudent]);
 
+    // Calculate sections dynamically based on selectedSchool filter
+    useEffect(() => {
+        const filteredStudents = studentsData.filter(student => {
+            if (selectedSchool !== 'All Schools' && student.schoolName !== selectedSchool) {
+                return false;
+            }
+            return true;
+        });
+
+        const grouped = filteredStudents.reduce((acc, student) => {
+            const cName = student.className || 'Unassigned';
+            if (!acc[cName]) {
+                acc[cName] = [];
+            }
+            acc[cName].push(student);
+            return acc;
+        }, {});
+
+        const sectionData = Object.keys(grouped).map(key => ({
+            title: key,
+            data: grouped[key]
+        })).sort((a, b) => a.title.localeCompare(b.title));
+
+        setSections(sectionData);
+
+        // Update available classes dynamically based on students at this school
+        const schoolClasses = ['All Classes', ...new Set(filteredStudents.map(s => s.className).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+        setAvailableClasses(schoolClasses);
+    }, [studentsData, selectedSchool]);
+
     const fetchInitialData = async () => {
         setLoading(true);
         try {
@@ -53,26 +90,8 @@ export default function StudentListScreen({ navigation }) {
                 api.get('/teacher/dashboard-stats?className=All%20Classes')
             ]);
             
-            const students = studentsRes.data;
-            const grouped = students.reduce((acc, student) => {
-                const cName = student.className || 'Unassigned';
-                if (!acc[cName]) {
-                    acc[cName] = [];
-                }
-                acc[cName].push(student);
-                return acc;
-            }, {});
-
-            const sectionData = Object.keys(grouped).map(key => ({
-                title: key,
-                data: grouped[key]
-            })).sort((a, b) => a.title.localeCompare(b.title));
-
-            setSections(sectionData);
+            setStudentsData(studentsRes.data);
             
-            if (statsRes.data.availableClasses) {
-                setAvailableClasses(statsRes.data.availableClasses);
-            }
             if (statsRes.data.categoryBreakdown) {
                 setCategoryData(statsRes.data.categoryBreakdown);
             }
@@ -146,9 +165,12 @@ export default function StudentListScreen({ navigation }) {
                 <View style={styles.avatarPlaceholder}>
                     <User color="#1B263B" size={20} />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                     <Text style={[styles.studentName, selectedStudent?.userID === item.userID && { color: '#065F46' }]}>{item.username}</Text>
                     <Text style={styles.studentLevel}>Level {item.level} • {item.xp} XP</Text>
+                    {item.schoolName ? (
+                        <Text style={styles.studentSchool}>{item.schoolName}</Text>
+                    ) : null}
                 </View>
             </View>
             <ChevronRight color="#9CA3AF" size={20} />
@@ -315,7 +337,29 @@ export default function StudentListScreen({ navigation }) {
                 <ActivityIndicator size="large" color="#1B263B" style={{ marginTop: 40 }} />
             ) : (
                 <>
+                    <View style={{ marginBottom: 12 }}>
+                        <Text style={styles.filterGroupHeader}>School Category</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
+                            {uniqueSchools.map((school, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.filterChip, selectedSchool === school && styles.filterChipActive]}
+                                    onPress={() => {
+                                        setSelectedSchool(school);
+                                        setSelectedClass('All Classes');
+                                        setSelectedStudent(null); // Reset student selection
+                                    }}
+                                >
+                                    <Text style={[styles.filterChipText, selectedSchool === school && styles.filterChipTextActive]}>
+                                        {school}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+
                     <View style={{ marginBottom: 16 }}>
+                        <Text style={styles.filterGroupHeader}>Class Category</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
                             {availableClasses.map((cls, index) => (
                                 <TouchableOpacity
@@ -783,5 +827,19 @@ const styles = StyleSheet.create({
         marginTop: 8,
         textAlign: 'center',
         fontStyle: 'italic',
+    },
+    filterGroupHeader: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#4B5563',
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    studentSchool: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        marginTop: 2,
+        fontWeight: '500',
     }
 });

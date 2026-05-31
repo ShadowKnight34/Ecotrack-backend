@@ -8,18 +8,30 @@ const pool = require('../config/db');
 // Fetches all posts and joins with the User table
 exports.getAllDiscussions = async (req, res) => {
     try {
-        const { formLevel } = req.query;
+        const { formLevel, schoolName, className } = req.query;
 
         let query = `
-            SELECT d.*, u.username, u.formLevel, u.role
+            SELECT d.*, u.username, u.formLevel, u.role, u.className, u.schoolID, s.schoolName
             FROM Discussion d 
             JOIN user u ON d.userID = u.userID
+            LEFT JOIN School s ON u.schoolID = s.schoolID
+            WHERE 1=1
         `;
         const params = [];
 
         if (formLevel) {
-            query += ` WHERE u.formLevel = ? OR u.role != 'student'`;
+            query += ` AND (u.formLevel = ? OR u.role != 'student')`;
             params.push(formLevel);
+        }
+
+        if (schoolName && schoolName !== 'All Schools') {
+            query += ` AND (s.schoolName = ? OR u.role = 'admin')`;
+            params.push(schoolName);
+        }
+
+        if (className && className !== 'All Classes') {
+            query += ` AND (u.className = ? OR u.role = 'admin')`;
+            params.push(className);
         }
 
         query += ` ORDER BY d.createdAt DESC`;

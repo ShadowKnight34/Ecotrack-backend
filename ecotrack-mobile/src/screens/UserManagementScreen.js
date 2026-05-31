@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
     View, Text, StyleSheet, FlatList, TouchableOpacity, 
-    Alert, Modal, ActivityIndicator, KeyboardAvoidingView, Platform
+    Alert, Modal, ActivityIndicator, KeyboardAvoidingView, Platform,
+    ScrollView
 } from 'react-native';
 import api from '../services/api';
 import Card from '../components/ui/Card';
@@ -19,6 +20,44 @@ export default function UserManagementScreen() {
     const [importModalVisible, setImportModalVisible] = useState(false);
     const [importResult, setImportResult] = useState(null);
     const [importing, setImporting] = useState(false);
+
+    // Dynamic Filter State
+    const [selectedRoleFilter, setSelectedRoleFilter] = useState('All');
+    const [selectedSchoolFilter, setSelectedSchoolFilter] = useState('All');
+    const [selectedClassFilter, setSelectedClassFilter] = useState('All');
+
+    // Extract dynamic filters
+    const uniqueSchools = ['All', ...new Set(users.map(u => u.schoolName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const uniqueClasses = ['All', ...new Set(users.map(u => {
+        if (u.role === 'student' && u.className) return u.className;
+        if (u.role === 'teacher' && u.teacherClasses) {
+            return u.teacherClasses.split(', ').map(c => c.trim());
+        }
+        return null;
+    }).flat().filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+    const filteredUsers = users.filter(user => {
+        // Role filter
+        if (selectedRoleFilter !== 'All') {
+            if (selectedRoleFilter.toLowerCase() !== user.role) return false;
+        }
+        // School filter
+        if (selectedSchoolFilter !== 'All') {
+            if (user.schoolName !== selectedSchoolFilter) return false;
+        }
+        // Class filter
+        if (selectedClassFilter !== 'All') {
+            if (user.role === 'student') {
+                if (user.className !== selectedClassFilter) return false;
+            } else if (user.role === 'teacher') {
+                const teacherClsList = user.teacherClasses ? user.teacherClasses.split(', ').map(c => c.trim()) : [];
+                if (!teacherClsList.includes(selectedClassFilter)) return false;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    });
 
     const handleImportCSV = async () => {
         try {
@@ -113,6 +152,60 @@ export default function UserManagementScreen() {
                 <Upload color="#121212" size={20} style={{ marginRight: 8 }} />
                 <Text style={styles.importButtonText}>Import Users via CSV</Text>
             </TouchableOpacity>
+
+            <View style={styles.filterSection}>
+                <Text style={styles.filterGroupLabel}>Role Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+                    {['All', 'Student', 'Teacher', 'Admin'].map((role) => (
+                        <TouchableOpacity
+                            key={role}
+                            style={[styles.filterChip, selectedRoleFilter === role && styles.filterChipActive]}
+                            onPress={() => {
+                                setSelectedRoleFilter(role);
+                                setSelectedClassFilter('All'); // Reset class filter
+                            }}
+                        >
+                            <Text style={[styles.filterChipText, selectedRoleFilter === role && styles.filterChipTextActive]}>
+                                {role === 'All' ? 'All Roles' : `${role}s`}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                <Text style={styles.filterGroupLabel}>School Category</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+                    {uniqueSchools.map((school) => (
+                        <TouchableOpacity
+                            key={school}
+                            style={[styles.filterChip, selectedSchoolFilter === school && styles.filterChipActive]}
+                            onPress={() => setSelectedSchoolFilter(school)}
+                        >
+                            <Text style={[styles.filterChipText, selectedSchoolFilter === school && styles.filterChipTextActive]}>
+                                {school === 'All' ? 'All Schools' : school}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                {(selectedRoleFilter === 'All' || selectedRoleFilter === 'Student' || selectedRoleFilter === 'Teacher') && uniqueClasses.length > 1 && (
+                    <>
+                        <Text style={styles.filterGroupLabel}>Class Category</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll}>
+                            {uniqueClasses.map((cls) => (
+                                <TouchableOpacity
+                                    key={cls}
+                                    style={[styles.filterChip, selectedClassFilter === cls && styles.filterChipActive]}
+                                    onPress={() => setSelectedClassFilter(cls)}
+                                >
+                                    <Text style={[styles.filterChipText, selectedClassFilter === cls && styles.filterChipTextActive]}>
+                                        {cls === 'All' ? 'All Classes' : cls}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </>
+                )}
+            </View>
         </View>
     );
 
@@ -201,6 +294,15 @@ export default function UserManagementScreen() {
                     <Text style={styles.userName}>{item.username}</Text>
                     <Text style={styles.userEmail}>{item.email}</Text>
                     <Text style={styles.userRole}>Role: {item.role}</Text>
+                    {item.schoolName ? (
+                        <Text style={styles.userMeta}>School: {item.schoolName}</Text>
+                    ) : null}
+                    {item.role === 'student' && item.className ? (
+                        <Text style={styles.userMeta}>Class: {item.className} (Form {item.formLevel || 'N/A'})</Text>
+                    ) : null}
+                    {item.role === 'teacher' && item.teacherClasses ? (
+                        <Text style={styles.userMeta}>Classes Monitored: {item.teacherClasses}</Text>
+                    ) : null}
                 </View>
             </View>
             <View style={styles.actionButtons}>
@@ -222,12 +324,12 @@ export default function UserManagementScreen() {
                 </View>
             ) : (
                 <FlatList
-                    data={users}
+                    data={filteredUsers}
                     keyExtractor={(item) => item.userID.toString()}
                     renderItem={renderItem}
                     ListHeaderComponent={renderHeader}
                     contentContainerStyle={styles.listContainer}
-                    ListEmptyComponent={<Text style={styles.emptyText}>No users found.</Text>}
+                    ListEmptyComponent={<Text style={styles.emptyText}>No users found matching the filter.</Text>}
                 />
             )}
 
@@ -607,6 +709,54 @@ const styles = StyleSheet.create({
         fontSize: 15,
         textAlign: 'center',
         marginTop: 12,
+        fontWeight: '500',
+    },
+    filterSection: {
+        marginTop: 16,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#333333',
+    },
+    filterGroupLabel: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        color: '#D4AF37',
+        marginTop: 8,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    filtersScroll: {
+        flexDirection: 'row',
+        marginBottom: 12,
+    },
+    filterChip: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        backgroundColor: '#1E1E1E',
+        borderColor: '#333333',
+        borderWidth: 1.5,
+        marginRight: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    filterChipActive: {
+        backgroundColor: '#D4AF37',
+        borderColor: '#D4AF37',
+    },
+    filterChipText: {
+        color: '#9CA3AF',
+        fontWeight: 'bold',
+        fontSize: 13,
+    },
+    filterChipTextActive: {
+        color: '#121212',
+    },
+    userMeta: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        marginTop: 2,
         fontWeight: '500',
     }
 });

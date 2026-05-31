@@ -89,6 +89,13 @@ export default function LoginScreen({ navigation, route }) {
                     <Text style={styles.buttonText}>{loading ? 'Signing In...' : 'Sign In'}</Text>
                 </TouchableOpacity>
 
+                <TouchableOpacity 
+                    style={{ marginBottom: 16 }}
+                    onPress={() => navigation.navigate('ForgotPassword', { role })}
+                >
+                    <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                </TouchableOpacity>
+
                 {role !== 'admin' && (
                     <TouchableOpacity onPress={() => navigation.navigate('Register', { role })}>
                         <Text style={styles.linkText}>
@@ -168,6 +175,12 @@ const getDynamicStyles = (role) => {
             color: '#FFFFFF',
             fontSize: 18,
             fontWeight: '700',
+        },
+        forgotPasswordText: {
+            color: isTeacherOrAdmin ? '#60A5FA' : '#34D399',
+            textAlign: 'center',
+            fontSize: 14,
+            fontWeight: '600',
         },
         linkText: {
             color: '#9CA3AF',

@@ -24,7 +24,11 @@ exports.getDashboardStats = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
     try {
         const [users] = await pool.query(
-            'SELECT userID, username, email, level, xp, role, className FROM user ORDER BY userID DESC'
+            `SELECT u.userID, u.username, u.email, u.level, u.xp, u.role, u.className, u.formLevel, u.schoolID, s.schoolName,
+                    (SELECT GROUP_CONCAT(className SEPARATOR ', ') FROM teacher_classes tc WHERE tc.teacherId = u.userID) AS teacherClasses
+             FROM user u
+             LEFT JOIN School s ON u.schoolID = s.schoolID
+             ORDER BY u.userID DESC`
         );
         return res.status(200).json(users);
     } catch (error) {
