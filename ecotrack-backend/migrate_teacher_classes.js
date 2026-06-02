@@ -8,7 +8,7 @@ CREATE TABLE teacher_classes (
     teacherId INT NOT NULL,
     className VARCHAR(50) NOT NULL,
     FOREIGN KEY (teacherId) REFERENCES user(userID) ON DELETE CASCADE
-);
+) ENGINE=InnoDB;
 `;
 
 async function runMigration() {
