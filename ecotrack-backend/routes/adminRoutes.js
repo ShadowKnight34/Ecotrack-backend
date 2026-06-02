@@ -23,4 +23,19 @@ router.delete('/users/:id', adminController.deleteUser);
 // POST /api/admin/users/import
 router.post('/users/import', adminController.importUsers);
 
+// GET /api/admin/badges
+router.get('/badges', adminController.getAllBadges);
+
+// POST /api/admin/badges
+router.post('/badges', adminController.createBadge);
+
+// PUT /api/admin/badges/:id
+router.put('/badges/:id', adminController.updateBadge);
+
+// DELETE /api/admin/badges/:id
+router.delete('/badges/:id', adminController.deleteBadge);
+
+// PUT /api/admin/modules/:id/mission
+router.put('/modules/:id/mission', adminController.updateModuleMission);
+
 module.exports = router;

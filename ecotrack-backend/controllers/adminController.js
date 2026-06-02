@@ -229,3 +229,110 @@ exports.importUsers = async (req, res) => {
         conn.release();
     }
 };
+
+// ── GET /api/admin/badges ────────────────────
+exports.getAllBadges = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM Badge');
+        return res.status(200).json(rows);
+    } catch (error) {
+        console.error('getAllBadges error:', error.message);
+        return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to fetch badges.' });
+    }
+};
+
+// ── POST /api/admin/badges ───────────────────
+exports.createBadge = async (req, res) => {
+    try {
+        const { badgeName, requirement } = req.body;
+        if (!badgeName || !requirement) {
+            return res.status(400).json({ message: 'badgeName and requirement are required.' });
+        }
+        const [result] = await pool.query(
+            'INSERT INTO Badge (badgeName, requirement) VALUES (?, ?)',
+            [badgeName, requirement]
+        );
+        return res.status(201).json({
+            message: 'Badge created successfully.',
+            badgeID: result.insertId,
+            badgeName,
+            requirement
+        });
+    } catch (error) {
+        console.error('createBadge error:', error.message);
+        return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to create badge.' });
+    }
+};
+
+// ── PUT /api/admin/badges/:id ────────────────
+exports.updateBadge = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { badgeName, requirement } = req.body;
+        if (!badgeName || !requirement) {
+            return res.status(400).json({ message: 'badgeName and requirement are required.' });
+        }
+        await pool.query(
+            'UPDATE Badge SET badgeName = ?, requirement = ? WHERE badgeID = ?',
+            [badgeName, requirement, id]
+        );
+        return res.status(200).json({
+            message: 'Badge updated successfully.',
+            badgeID: parseInt(id),
+            badgeName,
+            requirement
+        });
+    } catch (error) {
+        console.error('updateBadge error:', error.message);
+        return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to update badge.' });
+    }
+};
+
+// ── DELETE /api/admin/badges/:id ─────────────
+exports.deleteBadge = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+        const { id } = req.params;
+
+        // Safely cascade delete references in UserBadge to avoid FK constraint errors!
+        await connection.query('DELETE FROM UserBadge WHERE badgeID = ?', [id]);
+
+        // Delete from Badge table
+        await connection.query('DELETE FROM Badge WHERE badgeID = ?', [id]);
+
+        await connection.commit();
+        return res.status(200).json({ message: 'Badge deleted successfully.' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('deleteBadge error:', error.message);
+        return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to delete badge.' });
+    } finally {
+        connection.release();
+    }
+};
+
+// ── PUT /api/admin/modules/:id/mission ─────────
+exports.updateModuleMission = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { coreMission, keyTargets, localRelevance } = req.body;
+        if (!coreMission || !keyTargets || !localRelevance) {
+            return res.status(400).json({ message: 'coreMission, keyTargets, and localRelevance are required.' });
+        }
+        await pool.query(
+            'UPDATE Module SET coreMission = ?, keyTargets = ?, localRelevance = ? WHERE moduleID = ?',
+            [coreMission, keyTargets, localRelevance, id]
+        );
+        return res.status(200).json({
+            message: 'Module mission updated successfully.',
+            moduleID: parseInt(id),
+            coreMission,
+            keyTargets,
+            localRelevance
+        });
+    } catch (error) {
+        console.error('updateModuleMission error:', error.message);
+        return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to update module mission.' });
+    }
+};

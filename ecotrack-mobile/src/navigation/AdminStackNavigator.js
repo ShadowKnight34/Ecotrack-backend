@@ -7,6 +7,8 @@ import QuizEditorScreen from '../screens/QuizEditorScreen';
 import StudentReportScreen from '../screens/StudentReportScreen';
 import AttemptHistoryScreen from '../screens/AttemptHistoryScreen';
 import AttemptDetailScreen from '../screens/AttemptDetailScreen';
+import BadgeManagerScreen from '../screens/BadgeManagerScreen';
+import MissionManagerScreen from '../screens/MissionManagerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +56,16 @@ export default function AdminStackNavigator() {
                 name="AttemptDetail"
                 component={AttemptDetailScreen}
                 options={{ title: 'Attempt Details' }}
+            />
+            <Stack.Screen
+                name="BadgeManager"
+                component={BadgeManagerScreen}
+                options={{ title: 'Badge Management' }}
+            />
+            <Stack.Screen
+                name="MissionManager"
+                component={MissionManagerScreen}
+                options={{ title: 'Assign Missions' }}
             />
         </Stack.Navigator>
     );

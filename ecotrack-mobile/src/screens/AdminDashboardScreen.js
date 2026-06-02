@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useContext, useLayoutEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Users, FileText, HelpCircle, Shield, LogOut } from 'lucide-react-native';
+import { Users, FileText, HelpCircle, Shield, LogOut, Award, Target } from 'lucide-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
@@ -104,6 +104,34 @@ export default function AdminDashboardScreen({ navigation }) {
                         <FileText color="#D4AF37" size={32} />
                         <Text style={styles.statValue}>{stats.totalModules}</Text>
                         <Text style={styles.statLabel}>Modules</Text>
+                    </Card>
+                </TouchableOpacity>
+            </View>
+
+            <Text style={styles.sectionTitle}>Administrative Curations</Text>
+            
+            <View style={styles.statsGrid}>
+                <TouchableOpacity 
+                    style={{ width: '48%' }} 
+                    onPress={() => navigation.navigate('BadgeManager')}
+                    activeOpacity={0.8}
+                >
+                    <Card style={[styles.statCard, { width: '100%' }]}>
+                        <Award color="#D4AF37" size={32} />
+                        <Text style={styles.statValue}>Badges</Text>
+                        <Text style={styles.statLabel}>Manage Rewards</Text>
+                    </Card>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                    style={{ width: '48%' }} 
+                    onPress={() => navigation.navigate('MissionManager')}
+                    activeOpacity={0.8}
+                >
+                    <Card style={[styles.statCard, { width: '100%' }]}>
+                        <Target color="#D4AF37" size={32} />
+                        <Text style={styles.statValue}>Missions</Text>
+                        <Text style={styles.statLabel}>Assign Campaigns</Text>
                     </Card>
                 </TouchableOpacity>
             </View>
