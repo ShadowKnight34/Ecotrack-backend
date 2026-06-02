@@ -60,18 +60,22 @@ exports.register = async (req, res) => {
         // 3 ── Hash the password
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
-        // 4 ── Handle schoolName / schoolID
-        let finalSchoolID = schoolID || null;
-        if (schoolName && !finalSchoolID) {
-            const [schoolRows] = await pool.query('SELECT schoolID FROM School WHERE schoolName = ?', [schoolName]);
-            if (schoolRows.length > 0) {
-                finalSchoolID = schoolRows[0].schoolID;
-            } else {
-                const code = schoolName.replace(/\s+/g, '').toUpperCase().substring(0, 5) + '-' + Math.floor(Math.random() * 1000);
-                const [insertSchool] = await pool.query('INSERT INTO School (schoolName, schoolCode) VALUES (?, ?)', [schoolName, code]);
-                finalSchoolID = insertSchool.insertId;
-            }
+        // 4 ── Validate that schoolID is provided and exists in database
+        if (!schoolID) {
+            return res.status(400).json({
+                error: 'Bad Request',
+                message: 'schoolID is required for registration.'
+            });
         }
+
+        const [schoolRows] = await pool.query('SELECT schoolID FROM School WHERE schoolID = ?', [schoolID]);
+        if (schoolRows.length === 0) {
+            return res.status(400).json({
+                error: 'Bad Request',
+                message: 'The selected school does not exist in the database.'
+            });
+        }
+        const finalSchoolID = schoolID;
 
         // 5 ── Insert new user (default level = 1, xp = 0)
         const finalClassName = className || null;

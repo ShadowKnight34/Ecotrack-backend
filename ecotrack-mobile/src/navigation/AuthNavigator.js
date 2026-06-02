@@ -4,17 +4,19 @@ import RoleSelectionScreen from '../screens/RoleSelectionScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import WelcomeScreen from '../screens/WelcomeScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function AuthNavigator() {
     return (
         <Stack.Navigator
-            initialRouteName="RoleSelection"
+            initialRouteName="Welcome"
             screenOptions={{
                 headerShown: false,
             }}
         >
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
