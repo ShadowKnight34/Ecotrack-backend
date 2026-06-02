@@ -83,57 +83,30 @@ export default function AdminDashboardScreen({ navigation }) {
             <Text style={styles.sectionTitle}>System Overview</Text>
             
             <View style={styles.statsGrid}>
-                <Card style={styles.statCard}>
-                    <Users color="#D4AF37" size={32} />
-                    <Text style={styles.statValue}>{stats.totalUsers}</Text>
-                    <Text style={styles.statLabel}>Total Users</Text>
-                </Card>
+                <TouchableOpacity 
+                    style={{ width: '48%' }} 
+                    onPress={() => navigation.navigate('UserManagement')}
+                    activeOpacity={0.8}
+                >
+                    <Card style={[styles.statCard, { width: '100%' }]}>
+                        <Users color="#D4AF37" size={32} />
+                        <Text style={styles.statValue}>{stats.totalUsers}</Text>
+                        <Text style={styles.statLabel}>Total Users</Text>
+                    </Card>
+                </TouchableOpacity>
                 
-                <Card style={styles.statCard}>
-                    <FileText color="#D4AF37" size={32} />
-                    <Text style={styles.statValue}>{stats.totalModules}</Text>
-                    <Text style={styles.statLabel}>Modules</Text>
-                </Card>
-
-                <Card style={styles.statCard}>
-                    <HelpCircle color="#D4AF37" size={32} />
-                    <Text style={styles.statValue}>{stats.activeQuizzes}</Text>
-                    <Text style={styles.statLabel}>Active Quizzes</Text>
-                </Card>
+                <TouchableOpacity 
+                    style={{ width: '48%' }} 
+                    onPress={() => navigation.navigate('ContentManager')}
+                    activeOpacity={0.8}
+                >
+                    <Card style={[styles.statCard, { width: '100%' }]}>
+                        <FileText color="#D4AF37" size={32} />
+                        <Text style={styles.statValue}>{stats.totalModules}</Text>
+                        <Text style={styles.statLabel}>Modules</Text>
+                    </Card>
+                </TouchableOpacity>
             </View>
-
-            <Text style={styles.sectionTitle}>Administrative Tools</Text>
-
-            {user?.role === 'admin' && (
-                <TouchableOpacity onPress={() => navigation.navigate('UserManagement')}>
-                    <Card style={styles.toolCard}>
-                        <View style={styles.toolIconContainer}>
-                            <Shield color="#D4AF37" size={28} />
-                        </View>
-                        <View style={styles.toolInfo}>
-                            <Text style={styles.toolTitle}>User Management</Text>
-                            <Text style={styles.toolDesc}>Edit roles, view user list, and remove accounts.</Text>
-                        </View>
-                        <MaterialCommunityIcons name="chevron-right" size={24} color="#6B7280" />
-                    </Card>
-                </TouchableOpacity>
-            )}
-
-            {['admin', 'teacher'].includes(user?.role) && (
-                <TouchableOpacity onPress={() => navigation.navigate('ContentManager')}>
-                    <Card style={[styles.toolCard, { marginTop: 12 }]}>
-                        <View style={styles.toolIconContainer}>
-                            <FileText color="#D4AF37" size={28} />
-                        </View>
-                        <View style={styles.toolInfo}>
-                            <Text style={styles.toolTitle}>Module Management</Text>
-                            <Text style={styles.toolDesc}>Create, read, update, and delete modules and questions.</Text>
-                        </View>
-                        <MaterialCommunityIcons name="chevron-right" size={24} color="#6B7280" />
-                    </Card>
-                </TouchableOpacity>
-            )}
-
         </ScrollView>
     );
 }
@@ -178,7 +151,7 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     statCard: {
-        width: '31%',
+        width: '100%',
         alignItems: 'center',
         paddingVertical: 20,
         paddingHorizontal: 10,
