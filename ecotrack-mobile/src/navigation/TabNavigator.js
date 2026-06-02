@@ -147,6 +147,7 @@ export default function TabNavigator() {
                 <>
                     <Tab.Screen name="Home" component={TeacherStackNavigator} options={{ title: 'Home', headerShown: false }} />
                     <Tab.Screen name="Forum" component={ForumScreen} options={{ title: 'Forum', headerShown: false }} />
+                    <Tab.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Ranks' }} />
                     <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
                 </>
             ) : (
