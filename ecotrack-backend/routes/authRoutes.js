@@ -17,4 +17,7 @@ router.get('/me', authMiddleware, authController.getMe);
 // Protected route to update profile
 router.put('/profile', authMiddleware, authController.updateProfile);
 
+// Protected route to fetch all badges (accessible to all logged-in roles)
+router.get('/badges', authMiddleware, authController.getAllBadges);
+
 module.exports = router;

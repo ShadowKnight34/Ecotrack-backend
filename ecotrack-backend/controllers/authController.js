@@ -384,4 +384,16 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
+// ── GET /api/auth/badges (public to all authenticated users) ──
+exports.getAllBadges = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM Badge');
+        return res.status(200).json(rows);
+    } catch (error) {
+        console.error('getAllBadges error:', error.message);
+        return res.status(500).json({ error: 'Internal Server Error', message: 'Failed to fetch badges.' });
+    }
+};
+
+
 

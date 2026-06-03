@@ -16,13 +16,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
-const ALL_BADGES = [
-    { id: 1, icon: '🌱', name: 'First Steps' },
-    { id: 2, icon: '⭐', name: 'Rising Star' },
-    { id: 3, icon: '🏆', name: 'Eco Champion' },
-    { id: 4, icon: '💯', name: 'Perfect Score' },
-    { id: 5, icon: '✅', name: 'Passing Grade' },
-];
+const getBadgeIcon = (name) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('first steps') || lower.includes('steps')) return '🌱';
+    if (lower.includes('rising star') || lower.includes('star')) return '⭐';
+    if (lower.includes('eco champion') || lower.includes('champion')) return '🏆';
+    if (lower.includes('perfect score') || lower.includes('perfect')) return '💯';
+    if (lower.includes('passing grade') || lower.includes('passing')) return '✅';
+    if (lower.includes('master of study') || lower.includes('study') || lower.includes('master')) return '📖';
+    return '🏅'; // Default emoji for admin custom badges
+};
 
 export default function ProfileScreen({ navigation }) {
     const { user, setUser, setIsAuthenticated } = useContext(AuthContext);
@@ -36,6 +39,7 @@ export default function ProfileScreen({ navigation }) {
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [schoolNameInput, setSchoolNameInput] = useState(user?.schoolName || '');
     const [classNameInput, setClassNameInput] = useState(user?.className || '');
+    const [allBadges, setAllBadges] = useState([]);
 
     useFocusEffect(
         useCallback(() => {
@@ -56,6 +60,10 @@ export default function ProfileScreen({ navigation }) {
                             monitoredClassesCount,
                             totalAttemptsCount
                         });
+                    }
+                    if (response.data && response.data.role !== 'teacher') {
+                        const badgesRes = await api.get('/auth/badges');
+                        setAllBadges(badgesRes.data);
                     }
                 } catch (error) {
                     console.error('Error fetching profile:', error);
@@ -212,9 +220,11 @@ export default function ProfileScreen({ navigation }) {
     const nextLevelXP = user.level * 200;
     const xpProgress = user.xp / nextLevelXP;
 
-    const badges = ALL_BADGES.map(b => ({
-        ...b,
-        earned: user.earnedBadges && user.earnedBadges.includes(b.id)
+    const badges = allBadges.map(b => ({
+        id: b.badgeID,
+        name: b.badgeName,
+        icon: getBadgeIcon(b.badgeName),
+        earned: user.earnedBadges && user.earnedBadges.includes(b.badgeID)
     }));
     const earnedCount = badges.filter(b => b.earned).length;
 
