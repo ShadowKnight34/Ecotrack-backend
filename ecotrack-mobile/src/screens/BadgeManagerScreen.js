@@ -141,14 +141,14 @@ export default function BadgeManagerScreen() {
                                 <Text style={styles.badgeReqText}>Req: {badge.requirement}</Text>
                             </View>
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity 
-                                    onPress={() => handleOpenEdit(badge)} 
+                                <TouchableOpacity
+                                    onPress={() => handleOpenEdit(badge)}
                                     style={[styles.actionIconBtn, { marginRight: 12 }]}
                                 >
                                     <Edit color="#D4AF37" size={20} />
                                 </TouchableOpacity>
-                                <TouchableOpacity 
-                                    onPress={() => handleDeleteBadge(badge.badgeID, badge.badgeName)} 
+                                <TouchableOpacity
+                                    onPress={() => handleDeleteBadge(badge.badgeID, badge.badgeName)}
                                     style={styles.actionIconBtn}
                                 >
                                     <Trash2 color="#EF4444" size={20} />
@@ -194,9 +194,9 @@ export default function BadgeManagerScreen() {
                             autoCapitalize="none"
                         />
 
-                        <Button 
-                            style={{ marginTop: 12 }} 
-                            onPress={handleSubmit} 
+                        <Button
+                            style={{ marginTop: 12 }}
+                            onPress={handleSubmit}
                             disabled={submitting}
                         >
                             {submitting ? 'Saving...' : 'Save Badge'}

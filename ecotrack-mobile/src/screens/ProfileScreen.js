@@ -298,7 +298,7 @@ export default function ProfileScreen({ navigation }) {
                         <TouchableOpacity
                             style={styles.teacherStatCard}
                             activeOpacity={0.7}
-                            onPress={() => navigation.navigate('StudentList')}
+                            onPress={() => navigation.navigate('Home', { screen: 'StudentList' })}
                         >
                             <FileText color="#3B82F6" size={28} style={{ marginBottom: 6 }} />
                             <Text style={styles.teacherStatValue}>{teacherStats.totalAttemptsCount}</Text>
